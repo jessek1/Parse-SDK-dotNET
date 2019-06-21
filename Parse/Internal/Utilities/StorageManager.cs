@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,17 +11,19 @@ namespace Parse.Internal.Utilities
     /// </summary>
     internal static class StorageManager
     {
-        static StorageManager() => AppDomain.CurrentDomain.ProcessExit += (_, __) => { if (new FileInfo(FallbackPersistentStorageFilePath) is FileInfo file && file.Exists) file.Delete(); };
+        //static StorageManager() => AppDomain.CurrentDomain.ProcessExit += (_, __) => { if (new FileInfo(FallbackPersistentStorageFilePath) is FileInfo file && file.Exists) file.Delete(); };
+        static StorageManager() => AppDomain.CurrentDomain.ProcessExit += (_, __) => { if (new FileInfo(PersistentStorageFilePath) is FileInfo file && file.Exists) file.Delete(); };
 
         /// <summary>
         /// The path to a persistent user-specific storage location specific to the final client assembly of the Parse library.
         /// </summary>
-        public static string PersistentStorageFilePath => Path.GetFullPath(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), ParseClient.CurrentConfiguration.StorageConfiguration?.RelativeStorageFilePath ?? FallbackPersistentStorageFilePath));
+        // public static string PersistentStorageFilePath => Path.GetFullPath(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), ParseClient.CurrentConfiguration.StorageConfiguration?.RelativeStorageFilePath ?? FallbackPersistentStorageFilePath));
+        public static string PersistentStorageFilePath => Path.GetFullPath(Path.Combine(ParseClient.CurrentConfiguration.StorageConfiguration.PersistentStorageDir, ParseClient.CurrentConfiguration.StorageConfiguration.RelativeStorageFilePath));
 
         /// <summary>
         /// Gets the calculated persistent storage file fallback path for this app execution.
         /// </summary>
-        public static string FallbackPersistentStorageFilePath { get; } = ParseClient.Configuration.IdentifierBasedStorageConfiguration.Fallback.RelativeStorageFilePath;
+        //public static string FallbackPersistentStorageFilePath { get; } = ParseClient.Configuration.IdentifierBasedStorageConfiguration.Fallback.RelativeStorageFilePath;
 
         /// <summary>
         /// Asynchronously writes the provided little-endian 16-bit character string <paramref name="content"/> to the file wrapped by the provided <see cref="FileInfo"/> instance.
@@ -52,8 +55,12 @@ namespace Parse.Internal.Utilities
         {
             get
             {
+                Debug.WriteLine("PersistentStorageFilePath : " + PersistentStorageFilePath);
+                Debug.WriteLine("PersistentStorageFilePath changed : " + PersistentStorageFilePath.Substring(0, PersistentStorageFilePath.LastIndexOf(Path.DirectorySeparatorChar)));
+                Debug.WriteLine("PersistentStorageFilePath last index : " + PersistentStorageFilePath.LastIndexOf(Path.DirectorySeparatorChar).ToString());
+                Debug.WriteLine("PersistentStorageFilePath separator char : " + Path.DirectorySeparatorChar);
+                
                 Directory.CreateDirectory(PersistentStorageFilePath.Substring(0, PersistentStorageFilePath.LastIndexOf(Path.DirectorySeparatorChar)));
-
                 FileInfo file = new FileInfo(PersistentStorageFilePath);
                 if (!file.Exists)
                     using (file.Create())
